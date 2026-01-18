@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 import type { Client } from '@/app/lib/types'
 
 async function getClient(id: string): Promise<Client | null> {
+  const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from('clients')
     .select('*')

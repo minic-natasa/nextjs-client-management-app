@@ -1,8 +1,9 @@
 'use client'
 
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 
 export async function archiveClient(clientId: string): Promise<void> {
+  const supabase = getSupabaseClient()
   const { error } = await supabase
     .from('clients')
     .update({ archived_at: new Date().toISOString() })
@@ -16,6 +17,7 @@ export async function archiveClient(clientId: string): Promise<void> {
 export async function archiveClients(clientIds: string[]): Promise<void> {
   if (clientIds.length === 0) return
 
+  const supabase = getSupabaseClient()
   const { error } = await supabase
     .from('clients')
     .update({ archived_at: new Date().toISOString() })

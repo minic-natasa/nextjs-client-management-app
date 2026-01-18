@@ -1,7 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 import type { ClientWithStats, Project } from './types'
 
 export async function fetchClientsWithStats(): Promise<ClientWithStats[]> {
+  const supabase = getSupabaseClient()
+  
   // First, fetch all active clients
   const { data: clients, error: clientsError } = await supabase
     .from('clients')
