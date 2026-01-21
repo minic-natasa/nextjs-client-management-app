@@ -2,9 +2,11 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { ClientWithStats } from '../lib/types'
 import { formatDate, formatCurrency, truncateNotes, exportToCSV } from '../lib/utils'
 import { archiveClients } from '../lib/archive-client'
+import { updateClientStatus } from '../lib/update-client-status'
 
 interface ClientsTableProps {
   clients: ClientWithStats[]
@@ -34,6 +36,7 @@ export default function ClientsTable({ clients }: ClientsTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(25)
   const [isArchiving, setIsArchiving] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
 
   // Filter clients based on search and status
   const filteredClients = useMemo(() => {
@@ -193,6 +196,50 @@ export default function ClientsTable({ clients }: ClientsTableProps) {
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage)
     setCurrentPage(1) // Reset to first page
+  }
+
+  const handleSetToNonActive = async (clientId: string, clientName: string, event: React.MouseEvent) => {
+    event.stopPropagation() // Prevent row click
+
+    if (!confirm(`Are you sure you want to set "${clientName}" to Non-Active?`)) {
+      return
+    }
+
+    setUpdatingStatus(clientId)
+    try {
+      const result = await updateClientStatus(clientId, 'non_active')
+      if (result.success) {
+        router.refresh()
+      } else {
+        alert(`Failed to update status: ${result.error}`)
+      }
+    } catch (error) {
+      alert(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setUpdatingStatus(null)
+    }
+  }
+
+  const handleSetToActive = async (clientId: string, clientName: string, event: React.MouseEvent) => {
+    event.stopPropagation() // Prevent row click
+
+    if (!confirm(`Are you sure you want to set "${clientName}" to Active?`)) {
+      return
+    }
+
+    setUpdatingStatus(clientId)
+    try {
+      const result = await updateClientStatus(clientId, 'active')
+      if (result.success) {
+        router.refresh()
+      } else {
+        alert(`Failed to update status: ${result.error}`)
+      }
+    } catch (error) {
+      alert(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setUpdatingStatus(null)
+    }
   }
 
   const SortIcon = ({ column }: { column: SortColumn }) => {
@@ -376,12 +423,15 @@ export default function ClientsTable({ clients }: ClientsTableProps) {
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300">
                 Notes
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
             {paginatedClients.length === 0 ? (
               <tr>
-                <td colSpan={12} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td colSpan={13} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                   No clients found
                 </td>
               </tr>
@@ -459,6 +509,85 @@ export default function ClientsTable({ clients }: ClientsTableProps) {
                     >
                       {truncateNotes(client.notes)}
                     </span>
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/clients/${client.id}/edit`}
+                        className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <svg
+                          className="mr-1 h-3 w-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        Edit
+                      </Link>
+                      {client.status === 'active' ? (
+                        <button
+                          onClick={(e) => handleSetToNonActive(client.id, client.name, e)}
+                          disabled={updatingStatus === client.id}
+                          className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/40"
+                        >
+                          {updatingStatus === client.id ? (
+                            'Updating...'
+                          ) : (
+                            <>
+                              <svg
+                                className="mr-1 h-3 w-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                              Set Non-Active
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => handleSetToActive(client.id, client.name, e)}
+                          disabled={updatingStatus === client.id}
+                          className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40"
+                        >
+                          {updatingStatus === client.id ? (
+                            'Updating...'
+                          ) : (
+                            <>
+                              <svg
+                                className="mr-1 h-3 w-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              Set Active
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
