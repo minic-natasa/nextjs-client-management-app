@@ -29,7 +29,8 @@ type SortDirection = 'asc' | 'desc'
 export default function ClientsTable({ clients }: ClientsTableProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'non_active'>('all')
+  // Default to showing only active clients
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'non_active'>('active')
   const [sortColumn, setSortColumn] = useState<SortColumn>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -420,7 +421,7 @@ export default function ClientsTable({ clients }: ClientsTableProps) {
                   <SortIcon column="latest_end" />
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300 w-64">
                 Notes
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300">
@@ -502,7 +503,7 @@ export default function ClientsTable({ clients }: ClientsTableProps) {
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(client.latest_end)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 w-64 max-w-xs">
                     <span
                       title={client.notes || 'No notes'}
                       className="cursor-help"
